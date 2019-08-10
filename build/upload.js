@@ -16,6 +16,11 @@ let mac = new qiniu.auth.digest.Mac(accessKey, secretKey);
 let config = new qiniu.conf.Config();
 config.zone = qiniu.zone.Zone_z1;  // 空间对应的机房
 let formUploader = new qiniu.form_up.FormUploader(config);
+
+/**
+ * 1.3构造CDN管理对象
+ */
+let cdnManager = new qiniu.cdn.CdnManager(mac);
 // ================================== //参数初始化 =====================================
 
 // ================================== 文件遍历与上传 =====================================
@@ -56,7 +61,15 @@ console.log('file_list:', file_list)
 file_list.forEach((fileKey) => {
   let token = uptoken(bucket, fileKey); //生成上传 Token
   let filePath = local_base + fileKey; //要上传文件的本地路径
-  uploadFile(token, fileKey, filePath); //调用uploadFile上传
+  //调用uploadFile上传
+  uploadFile(token, fileKey, filePath,function(){ 
+    /**
+     * 2.3刷新首页文件
+     */
+    if(fileKey==='index.html'){
+      refreshURLs(['http://demo.zaoming.net/index.html'])
+    }
+  }); 
 })
 
 /**
@@ -73,16 +86,48 @@ function uptoken(bucket, key) {
 /**
  * 文件上传的函数
  */
-function uploadFile(uptoken, key, localFile) {
+function uploadFile(uptoken, key, localFile,successFn) {
   let extra = new qiniu.form_up.PutExtra();
   formUploader.putFile(uptoken, key, localFile, extra, function(err, ret) {
     if (!err) {
       // 上传成功， 处理返回值
       console.log('uploadFile-success:', ret.hash, ret.key, ret.persistentId);
+      successFn && successFn()
     } else {
       // 上传失败， 处理返回代码
       console.warn('uploadFile-error:', err);
     }
   });
+}
+
+/**
+ * 刷新URL列表:单此请求数量不要超过100个
+ */
+function refreshURLs(URLs){
+  let URLs_list = chunkArray(URLs,100)
+  URLs_list.forEach((_URLs)=>{
+    console.log('refreshURLs:',_URLs)
+    cdnManager.refreshUrls(_URLs, function(err, respBody, respInfo) {
+      if (!err) {
+        let {statusCode}=respInfo
+        let {code} = JSON.parse(respBody)||{}
+        console.log('refreshURLs-success:',statusCode,code);
+      }else{
+        console.warn('refreshURLs-err:',err)
+      }
+  });
+  })
+}
+
+/**
+ * 数组分割
+ */
+function chunkArray(array,size=100){
+  let length=array.length;
+  let slicedArray = [];
+  for(let i=0;i<length;i=i+size){
+    slicedArray.push(array.slice(i,i+size));
+  }
+  return slicedArray;
 }
 // ================================== //文件遍历与上传 =====================================
