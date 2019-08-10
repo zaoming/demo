@@ -5,9 +5,10 @@ const path = require('path');
 // ================================== 参数初始化 =====================================
 /**
  * 1.1配置Access Key和Secret Key，获取mac值
+ * 获取地址：https://portal.qiniu.com/user/key
  */
-const accessKey = 'Jsz8U5Tc7gsHrx5X73u9sKuUd8LSIQxkrOnkwm1J';
-const secretKey = 'BFXCrKBmvIPui3sv_rxcCZH7JkVbd-Omt4YDxckE';
+const accessKey = '***************************************';
+const secretKey = '***************************************';;
 let mac = new qiniu.auth.digest.Mac(accessKey, secretKey);
 
 /**
@@ -62,14 +63,14 @@ file_list.forEach((fileKey) => {
   let token = uptoken(bucket, fileKey); //生成上传 Token
   let filePath = local_base + fileKey; //要上传文件的本地路径
   //调用uploadFile上传
-  uploadFile(token, fileKey, filePath,function(){ 
+  uploadFile(token, fileKey, filePath, function() {
     /**
      * 2.3刷新首页文件
      */
-    if(fileKey==='index.html'){
+    if (fileKey === 'index.html') {
       refreshURLs(['http://demo.zaoming.net/index.html'])
     }
-  }); 
+  });
 })
 
 /**
@@ -86,7 +87,7 @@ function uptoken(bucket, key) {
 /**
  * 文件上传的函数
  */
-function uploadFile(uptoken, key, localFile,successFn) {
+function uploadFile(uptoken, key, localFile, successFn) {
   let extra = new qiniu.form_up.PutExtra();
   formUploader.putFile(uptoken, key, localFile, extra, function(err, ret) {
     if (!err) {
@@ -103,30 +104,30 @@ function uploadFile(uptoken, key, localFile,successFn) {
 /**
  * 刷新URL列表:单此请求数量不要超过100个
  */
-function refreshURLs(URLs){
-  let URLs_list = chunkArray(URLs,100)
-  URLs_list.forEach((_URLs)=>{
-    console.log('refreshURLs:',_URLs)
+function refreshURLs(URLs) {
+  let URLs_list = chunkArray(URLs, 100)
+  URLs_list.forEach((_URLs) => {
+    console.log('refreshURLs:', _URLs)
     cdnManager.refreshUrls(_URLs, function(err, respBody, respInfo) {
       if (!err) {
-        let {statusCode}=respInfo
-        let {code} = JSON.parse(respBody)||{}
-        console.log('refreshURLs-success:',statusCode,code);
-      }else{
-        console.warn('refreshURLs-err:',err)
+        let { statusCode } = respInfo
+        let { code } = JSON.parse(respBody) || {}
+        console.log('refreshURLs-success:', statusCode, code);
+      } else {
+        console.warn('refreshURLs-err:', err)
       }
-  });
+    });
   })
 }
 
 /**
  * 数组分割
  */
-function chunkArray(array,size=100){
-  let length=array.length;
+function chunkArray(array, size = 100) {
+  let length = array.length;
   let slicedArray = [];
-  for(let i=0;i<length;i=i+size){
-    slicedArray.push(array.slice(i,i+size));
+  for (let i = 0; i < length; i = i + size) {
+    slicedArray.push(array.slice(i, i + size));
   }
   return slicedArray;
 }
