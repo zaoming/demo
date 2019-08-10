@@ -9,6 +9,7 @@
     "start": "npm run dev",
     "lint": "eslint --ext .js,.vue src",
     "build": "node build/build.js",
+    "upload": "node build/upload.js",
     "online": "node build/build.js && node build/upload.js"
   },
   "dependencies": {
